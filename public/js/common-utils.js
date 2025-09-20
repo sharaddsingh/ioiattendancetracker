@@ -151,5 +151,6 @@ const CommonUtils = {
 
 // Make functions available globally
 window.updateBatchOptions = CommonUtils.updateBatchOptions;
+window.showNotification = CommonUtils.showNotification;
 window.formatISTDate = CommonUtils.formatISTDate;
 window.formatISTDateTime = CommonUtils.formatISTDateTime;

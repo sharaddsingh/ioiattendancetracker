@@ -2198,6 +2198,7 @@ async function testCameraAccess() {
 
 // Open QR Scanner Modal (with native browser permission check)
 function openQRScanner() {
+  console.log('🎯 openQRScanner function called successfully!');
   console.log('🚀 Starting attendance marking process...');
   
   // First check if Html5Qrcode library is loaded
@@ -3562,21 +3563,61 @@ function hideCameraFallback() {
   }
 }
 
-// Enhanced openQRScanner with fallback logic
-const originalOpenQRScanner = openQRScanner;
-function openQRScanner() {
-  // Try the original function first
+// This was causing circular reference issues, removed the override
+
+// Test function for debugging QR scanner
+function testQRScanner() {
+  console.log('🔧 Testing QR Scanner functionality...');
+  
+  // Check if all required elements exist
+  const elements = {
+    scannerBtn: document.getElementById('openScannerBtn'),
+    scannerModal: document.getElementById('scannerModal'),
+    qrReader: document.getElementById('qrReader'),
+    scannerStatus: document.getElementById('scannerStatus')
+  };
+  
+  console.log('📋 Element check:', elements);
+  
+  // Check if Html5Qrcode library is loaded
+  console.log('📚 Html5Qrcode library loaded:', typeof Html5Qrcode !== 'undefined');
+  
+  // Check if camera API is available
+  console.log('📹 Camera API available:', !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia));
+  
+  // Check if showNotification function is available
+  console.log('🔔 showNotification function available:', typeof showNotification === 'function');
+  
+  // Test showNotification
+  if (typeof showNotification === 'function') {
+    showNotification('Test', 'QR Scanner test initiated!');
+  } else {
+    alert('showNotification function not available!');
+  }
+  
+  // Try to call openQRScanner directly
   try {
-    originalOpenQRScanner();
-    hideCameraFallback(); // Hide fallback if scanner works
+    console.log('🚀 Calling openQRScanner directly...');
+    openQRScanner();
   } catch (error) {
-    console.warn('QR Scanner failed, showing fallback option:', error);
-    showCameraFallback();
+    console.error('❌ Error calling openQRScanner:', error);
+    alert('Error calling openQRScanner: ' + error.message);
   }
 }
 
 // Global functions to be called from HTML
-window.openQRScanner = openQRScanner;
+// Ensure openQRScanner is properly defined and accessible
+if (typeof openQRScanner === 'function') {
+  window.openQRScanner = openQRScanner;
+  console.log('✅ openQRScanner function attached to window');
+} else {
+  console.error('❌ openQRScanner function not found!');
+  // Create a fallback function
+  window.openQRScanner = function() {
+    alert('QR Scanner function not available. Please refresh the page.');
+    console.error('openQRScanner fallback called - function not properly defined');
+  };
+}
 window.closeQRScanner = closeQRScanner;
 window.openPhotoCapture = openPhotoCapture;
 window.closePhotoCaptureModal = closePhotoCaptureModal;
@@ -3590,20 +3631,51 @@ window.clearManualEntry = clearManualEntry;
 window.processManualQrEntry = processManualQrEntry;
 window.showCameraFallback = showCameraFallback;
 window.hideCameraFallback = hideCameraFallback;
+window.testQRScanner = testQRScanner;
 
 /* ===== PAGE INITIALIZATION ===== */
 // Initialize page when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
   // Note: Logout function is already defined in HTML head section
   
-  // Only initialize charts after a small delay to ensure DOM is ready
+  // Check if critical libraries are loaded
   setTimeout(() => {
+    console.log('🔍 Checking library availability:');
+    console.log('- Html5Qrcode:', typeof Html5Qrcode !== 'undefined' ? '✅ Loaded' : '❌ Not loaded');
+    console.log('- showNotification:', typeof showNotification === 'function' ? '✅ Available' : '❌ Not available');
+    console.log('- Chart:', typeof Chart !== 'undefined' ? '✅ Loaded' : '❌ Not loaded');
+    console.log('- Firebase:', typeof firebase !== 'undefined' ? '✅ Loaded' : '❌ Not loaded');
+    
+    // Initialize charts
     updateCharts();
     showLowAttendanceWarnings();
-  }, 100);
+    
+    // Log QR scanner button status and add backup event listener
+    const qrBtn = document.getElementById('openScannerBtn');
+    console.log('📱 QR Scanner button:', qrBtn ? '✅ Found' : '❌ Not found');
+    if (qrBtn) {
+      console.log('📱 QR Scanner button onclick:', qrBtn.onclick ? '✅ Has onclick' : '❌ No onclick');
+      console.log('📱 QR Scanner button getAttribute onclick:', qrBtn.getAttribute('onclick'));
+      
+      // Add backup event listener in case onclick attribute fails
+      qrBtn.addEventListener('click', function(e) {
+        console.log('🔴 QR Scanner button clicked via event listener');
+        e.preventDefault();
+        if (typeof window.openQRScanner === 'function') {
+          window.openQRScanner();
+        } else {
+          console.error('openQRScanner function not available in window object');
+          alert('QR Scanner function not available. Please refresh the page.');
+        }
+      });
+      
+      console.log('🔴 Backup event listener added to QR Scanner button');
+    }
+  }, 500); // Increased delay to ensure libraries are loaded
   
   // Add debug info to console
   console.log('Student dashboard loaded. Debug functions available:');
+  console.log('- testQRScanner() - Test QR scanner functionality');
   console.log('- debugCreateTestNotification(status) - Create test notification');
   console.log('- debugNotificationStatus() - Check notification system status');
   console.log('- debugTestFirebaseConnection() - Test Firebase connection');
