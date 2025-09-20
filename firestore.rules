@@ -1,0 +1,132 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if current user is faculty
+    function isFaculty() {
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/faculty/$(request.auth.uid));
+    }
+    
+    // Users collection - basic user data
+    match /users/{userId} {
+      // Users can read/write their own documents
+      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      // Faculty can read all user documents for reports and manual attendance
+      allow read: if isFaculty();
+    }
+    
+    // Profiles collection - detailed user profiles
+    match /profiles/{userId} {
+      // Users can read/write their own profiles
+      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      // Faculty can read all profiles for reports and manual attendance
+      allow read: if isFaculty();
+    }
+    
+    // Faculty collection - faculty-specific data
+    match /faculty/{facultyId} {
+      // Faculty can read/write their own documents
+      allow read, write: if isAuthenticated() && request.auth.uid == facultyId;
+      // Faculty can read other faculty docs for name resolution
+      allow read: if isFaculty();
+    }
+    
+    // Attendances collection - attendance records
+    match /attendances/{docId} {
+      // Students can read their own attendance records
+      allow read: if isAuthenticated() && 
+                     request.auth.uid == resource.data.userId;
+      
+      // Students can create their own attendance records (QR scan)
+      allow create: if isAuthenticated() && 
+                       request.auth.uid == request.resource.data.userId;
+      
+      // Faculty can read ALL attendance records for reports
+      allow read: if isFaculty();
+      
+      // Faculty can create attendance records for manual entry
+      allow create: if isFaculty();
+      
+      // Faculty can update attendance records (corrections)
+      allow update: if isFaculty();
+    }
+    
+    // Leave requests collection
+    match /leaveRequests/{requestId} {
+      // Students can create their own leave requests
+      allow create: if isAuthenticated() && 
+                       request.auth.uid == request.resource.data.userId;
+      
+      // Students can read their own leave requests
+      allow read: if isAuthenticated() && 
+                     request.auth.uid == resource.data.userId;
+      
+      // Faculty can read and update ALL leave requests
+      allow read, update: if isFaculty();
+    }
+    
+    // Notifications collection
+    match /notifications/{notificationId} {
+      // Users can read their own notifications
+      allow read: if isAuthenticated() && 
+                     request.auth.uid == resource.data.userId;
+      
+      // Users can update their own notifications (mark as read)
+      allow update: if isAuthenticated() && 
+                       request.auth.uid == resource.data.userId;
+      
+      // Faculty can create notifications for students
+      allow create: if isAuthenticated() && isFaculty();
+      
+      // Allow students to create their own notifications (for testing/future features)
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
+    }
+    
+    // Daily schedules collection - for period tracking
+    match /dailySchedules/{docId} {
+      allow read, write: if isFaculty();
+    }
+    
+    // Temporary photo verification collection - for QR session photos
+    match /tempPhotos/{photoId} {
+      // Students can create their own temp photos during QR sessions
+      allow create: if isAuthenticated() && 
+                       request.auth.uid == request.resource.data.studentId;
+      
+      // Faculty can read temp photos for their QR sessions
+      allow read: if isFaculty();
+      
+      // Faculty can update temp photos (approve/reject)
+      allow update: if isFaculty();
+      
+      // Allow deletion after processing
+      allow delete: if isFaculty();
+    }
+    
+    // QR Sessions collection - for tracking active QR sessions
+    match /qrSessions/{sessionId} {
+      // Faculty can create and manage QR sessions
+      allow read, write: if isFaculty();
+      
+      // Students can read active sessions to validate QR codes
+      allow read: if isAuthenticated();
+    }
+    
+    // Test collection - for debugging
+    match /test/{docId} {
+      allow read, write: if isAuthenticated();
+    }
+    
+    // Default deny all other operations
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
