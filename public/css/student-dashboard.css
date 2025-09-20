@@ -839,7 +839,7 @@ canvas {
 /* ===== QR SCANNER AND PHOTO CAPTURE STYLES ===== */
 .qr-scanner-section {
   width: 100%;
-  max-width: 500px;
+  max-width: 1000px;
   margin: 0 auto;
 }
 
@@ -894,10 +894,10 @@ canvas {
 .scanner-modal-content {
   background: #fff;
   border-radius: 15px;
-  max-width: 500px;
+  max-width: 1000px;
   width: 90%;
   max-height: 90%;
-  overflow: hidden;
+  overflow:visible;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
   animation: modalSlideIn 0.3s ease-out;
 }
