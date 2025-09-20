@@ -2143,7 +2143,7 @@ function initializeQRScanner() {
     
     const config = {
       fps: 10,
-      qrbox: { width: 250, height: 250 },
+      qrbox: { width: 500, height: 500 },
       aspectRatio: 1.0
     };
     
