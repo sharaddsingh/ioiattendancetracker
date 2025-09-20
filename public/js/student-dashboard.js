@@ -2204,8 +2204,33 @@ function openQRScanner() {
   // First check if Html5Qrcode library is loaded
   if (typeof Html5Qrcode === 'undefined') {
     console.error('❌ Html5Qrcode library not loaded');
-    showNotification('Scanner Error', 'QR Scanner library is not loaded. Please refresh the page and try again.');
-    return;
+    
+    // Check if library is still loading or failed
+    if (window.qrLibraryLoadFailed) {
+      showNotification('Scanner Error', 'QR Scanner library failed to load from all sources. Please check your internet connection and refresh the page.');
+      
+      // Show manual entry fallback immediately
+      setTimeout(() => {
+        showCameraFallback();
+      }, 1000);
+      
+      return;
+    } else {
+      // Library might still be loading, wait a bit
+      showNotification('Loading...', 'QR Scanner library is loading. Please wait...');
+      
+      setTimeout(() => {
+        if (typeof Html5Qrcode !== 'undefined') {
+          console.log('✅ Library loaded after delay, retrying...');
+          openQRScanner();
+        } else {
+          showNotification('Scanner Error', 'QR Scanner library is taking too long to load. Please refresh the page or use manual entry.');
+          showCameraFallback();
+        }
+      }, 2000);
+      
+      return;
+    }
   }
   
   // Check if navigator and mediaDevices are available
@@ -3579,8 +3604,11 @@ function testQRScanner() {
   
   console.log('📋 Element check:', elements);
   
-  // Check if Html5Qrcode library is loaded
-  console.log('📚 Html5Qrcode library loaded:', typeof Html5Qrcode !== 'undefined');
+  // Check library loading status
+  console.log('📚 Library status:');
+  console.log('  - Html5Qrcode available:', typeof Html5Qrcode !== 'undefined');
+  console.log('  - qrLibraryLoaded flag:', window.qrLibraryLoaded);
+  console.log('  - qrLibraryLoadFailed flag:', window.qrLibraryLoadFailed);
   
   // Check if camera API is available
   console.log('📹 Camera API available:', !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia));
@@ -3590,9 +3618,19 @@ function testQRScanner() {
   
   // Test showNotification
   if (typeof showNotification === 'function') {
-    showNotification('Test', 'QR Scanner test initiated!');
+    showNotification('Test', 'QR Scanner diagnostic test initiated! Check console for details.');
   } else {
     alert('showNotification function not available!');
+  }
+  
+  // Test Html5Qrcode directly if available
+  if (typeof Html5Qrcode !== 'undefined') {
+    try {
+      const testReader = new Html5Qrcode('test-div-doesnt-exist');
+      console.log('✅ Html5Qrcode constructor works');
+    } catch (e) {
+      console.log('⚠️ Html5Qrcode constructor test (expected error):', e.message);
+    }
   }
   
   // Try to call openQRScanner directly
